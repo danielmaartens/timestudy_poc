@@ -1,0 +1,57 @@
+# create network using: docker network create --subnet=172.7.0.0/16 time-study
+
+version: "3.0"
+
+volumes:
+  postgres-data:
+    driver: local
+
+services:
+
+  db:
+    container_name: time-study-db
+    image: postgres
+    env_file:
+      - ./server/postgres.env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5353:5353
+    networks:
+      timeStudy:
+        ipv4_address: 172.7.0.2
+
+  time-study-service:
+    container_name: time-study-service
+    image: tf/time-study-service:latest
+    restart: always
+    links:
+      - db
+    depends_on:
+      - db
+    ports:
+      - 7788:7788
+      - 5757:5757
+    env_file:
+      - ./.env
+    networks:
+      timeStudy:
+        ipv4_address: 172.7.0.4
+
+  time-study-app:
+    container_name: time-study-app
+    image: tf/time-study-app:latest
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - 7777:7777
+      - 8080:8080
+    networks:
+      timeStudy:
+        ipv4_address: 172.7.0.3
+
+networks:
+  timeStudy:
+    external:
+      name: time-study
